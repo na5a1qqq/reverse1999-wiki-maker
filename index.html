@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>리버스: 1999 캐릭터 위키 메이커</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:        #f8f9fa;
+  --bg-panel:  #ffffff;
+  --bg-input:  #f1f3f5;
+  --bg-hover:  #e9ecef;
+  --border:    #dee2e6;
+  --border-focus:#339af0;
+  --text:      #212529;
+  --text-sub:  #868e96;
+  --text-ph:   #adb5bd;
+  --accent:    #339af0;
+  --accent-dk: #1c7ed6;
+  --accent-bg: #e7f5ff;
+  --green:     #2f9e44;
+  --red:       #e03131;
+  --red-bg:    #fff5f5;
+  --shadow:    0 1px 3px rgba(0,0,0,.08);
+  --radius:    6px;
+  --panel-w:   420px;
+  --topbar-h:  52px;
+  --fk: 'Noto Sans KR', sans-serif;
+  --fm: 'JetBrains Mono', monospace;
+}
+*,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+html,body { height:100%; overflow:hidden; }
+body { background:var(--bg); color:var(--text); font-family:var(--fk); font-size:13px; line-height:1.6; }
+
+.topbar { height:var(--topbar-h); background:var(--bg-panel); border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; padding:0 20px; position:fixed; top:0; left:0; right:0; z-index:300; box-shadow:var(--shadow); }
+.topbar-brand { display:flex; align-items:center; gap:10px; }
+.topbar-logo  { font-size:15px; font-weight:600; color:var(--text); display:flex; align-items:center; gap:8px; }
+.logo-icon    { width:28px; height:28px; background:var(--accent); border-radius:6px; display:flex; align-items:center; justify-content:center; color:white; font-size:14px; font-weight:700; }
+.topbar-badge { font-size:11px; background:var(--accent-bg); color:var(--accent); padding:2px 8px; border-radius:20px; font-weight:500; }
+.topbar-actions { display:flex; align-items:center; gap:6px; }
+
+.btn { display:inline-flex; align-items:center; gap:5px; padding:7px 14px; border-radius:var(--radius); border:1px solid transparent; font-family:var(--fk); font-size:12px; font-weight:500; cursor:pointer; transition:all .15s; }
+.btn-default { background:var(--bg-input); border-color:var(--border); color:var(--text); }
+.btn-default:hover { background:var(--bg-hover); }
+.btn-success { background:var(--green); color:white; }
+.btn-success:hover { background:#237032; }
+.btn-danger  { background:white; border-color:var(--border); color:var(--red); }
+.btn-danger:hover { background:var(--red-bg); border-color:var(--red); }
+.btn-sm { padding:5px 10px; font-size:11px; }
+
+.layout { display:flex; height:calc(100vh - var(--topbar-h)); margin-top:var(--topbar-h); }
+.panel { width:var(--panel-w); flex-shrink:0; background:var(--bg-panel); border-right:1px solid var(--border); display:flex; flex-direction:column; overflow:hidden; }
+
+/* 서식 툴바 고정 */
+.fmt-fixed-bar {
+  background:#f0f4f8;
+  border-bottom:1px solid var(--border);
+  padding:6px 10px;
+  display:flex;
+  align-items:center;
+  gap:4px;
+  flex-wrap:wrap;
+  flex-shrink:0;
+  position:relative;
+}
+.fmt-fixed-label { font-size:10px; color:var(--text-sub); margin-right:4px; font-weight:600; letter-spacing:.04em; }
+.fmt-btn {
+  background:white;
+  border:1px solid var(--border);
+  border-radius:4px;
+  padding:3px 9px;
+  font-size:11px;
+  cursor:pointer;
+  font-family:var(--fk);
+  color:var(--text);
+  transition:all .12s;
+  line-height:1.4;
+}
+.fmt-btn:hover { background:var(--accent-bg); border-color:var(--accent); color:var(--accent); }
+.fmt-btn b  { font-weight:700; }
+.fmt-btn i  { font-style:italic; }
+.fmt-sep { width:1px; height:18px; background:var(--border); margin:0 2px; }
+
+/* 각주 드롭다운 */
+.fn-dropdown {
+  position:absolute;
+  top:100%;
+  left:0;
+  right:0;
+  background:white;
+  border:1px solid var(--border);
+  border-top:none;
+  box-shadow:0 4px 12px rgba(0,0,0,.1);
+  z-index:999;
+  display:none;
+  max-height:200px;
+  overflow-y:auto;
+}
+.fn-dropdown.open { display:block; }
+.fn-dropdown-item {
+  padding:8px 14px;
+  cursor:pointer;
+  font-size:12px;
+  font-family:var(--fk);
+  border-bottom:1px solid var(--border);
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.fn-dropdown-item:last-child { border-bottom:none; }
+.fn-dropdown-item:hover { background:var(--accent-bg); color:var(--accent); }
+.fn-dropdown-name { font-weight:600; color:var(--accent); font-size:11px; background:var(--accent-bg); padding:2px 6px; border-radius:3px; }
+.fn-dropdown-desc { color:var(--text-sub); font-size:11px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+/* 탭 */
+.tab-nav   { padding:8px 10px 0; border-bottom:1px solid var(--border); flex-shrink:0; }
+.tab-nav-label { font-size:10px; font-weight:600; color:var(--text-sub); letter-spacing:.06em; text-transform:uppercase; margin-bottom:6px; padding-left:2px; }
+.tab-list  { display:flex; flex-wrap:wrap; gap:3px; padding-bottom:8px; }
+.tab { font-family:var(--fk); font-size:12px; padding:4px 9px; border-radius:4px; border:1px solid transparent; background:transparent; color:var(--text-sub); cursor:pointer; transition:all .12s; }
+.tab:hover { background:var(--bg-hover); color:var(--text); }
+.tab.active { background:var(--accent-bg); border-color:#a5d8ff; color:var(--accent); font-weight:500; }
+
+.form-area { flex:1; overflow-y:auto; padding:14px; scrollbar-width:thin; scrollbar-color:var(--border) transparent; }
+.form-area::-webkit-scrollbar { width:4px; }
+.form-area::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+.form-section { display:none; }
+.form-section.active { display:block; }
+
+.sec-title { font-size:13px; font-weight:600; color:var(--text); padding-bottom:8px; margin-bottom:12px; border-bottom:2px solid var(--accent); display:flex; align-items:center; gap:7px; }
+.sec-icon  { width:20px; height:20px; background:var(--accent); border-radius:4px; display:inline-flex; align-items:center; justify-content:center; color:white; font-size:10px; font-weight:700; flex-shrink:0; }
+.sub-title { font-size:11px; font-weight:600; color:var(--text-sub); text-transform:uppercase; letter-spacing:.05em; margin:14px 0 8px; padding-bottom:5px; border-bottom:1px solid var(--border); }
+
+.form-group { margin-bottom:10px; }
+.form-label { display:block; font-size:12px; font-weight:500; color:var(--text); margin-bottom:4px; }
+.form-label-sub { font-size:11px; color:var(--text-sub); font-weight:400; margin-left:3px; }
+.form-input,.form-select { width:100%; background:var(--bg-input); border:1px solid var(--border); border-radius:var(--radius); color:var(--text); padding:7px 10px; font-family:var(--fk); font-size:12px; outline:none; transition:border-color .15s, box-shadow .15s; }
+.form-input:focus,.form-select:focus { border-color:var(--border-focus); box-shadow:0 0 0 3px rgba(51,154,240,.12); background:white; }
+.form-input::placeholder { color:var(--text-ph); }
+.form-row { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+
+/* WYSIWYG 에디터 */
+.rich-editor {
+  width:100%;
+  min-height:70px;
+  background:var(--bg-input);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  color:var(--text);
+  padding:7px 10px;
+  font-family:var(--fk);
+  font-size:12px;
+  outline:none;
+  transition:border-color .15s, box-shadow .15s;
+  line-height:1.6;
+  cursor:text;
+  word-break:break-all;
+}
+.rich-editor:focus {
+  border-color:var(--border-focus);
+  box-shadow:0 0 0 3px rgba(51,154,240,.12);
+  background:white;
+}
+.rich-editor:empty::before {
+  content: attr(data-placeholder);
+  color:var(--text-ph);
+  pointer-events:none;
+}
+.rich-editor.tall { min-height:100px; }
+/* 에디터 내 서식 미리보기 */
+.rich-editor strong { font-weight:700; }
+.rich-editor em { font-style:italic; color:#868e96; }
+.rich-editor .keyword { color:#0077ff; font-weight:600; }
+.rich-editor .pct { color:#ff8400; font-weight:600; }
+.rich-editor .fn-tooltip { color:#0263b8; font-size:10px; vertical-align:super; cursor:default; }
+
+/* 커스텀 드롭다운 */
+.custom-select-wrap { position:relative; }
+.custom-select-btn {
+  width:100%; background:var(--bg-input); border:1px solid var(--border); border-radius:var(--radius);
+  padding:6px 10px; font-family:var(--fk); font-size:12px; color:var(--text);
+  cursor:pointer; display:flex; align-items:center; gap:8px; text-align:left;
+}
+.custom-select-btn:hover { border-color:var(--border-focus); }
+.custom-select-btn img { width:18px; height:18px; object-fit:contain; }
+.custom-select-btn .caret { margin-left:auto; font-size:10px; color:var(--text-sub); }
+.custom-select-dropdown {
+  position:absolute; top:calc(100% + 2px); left:0; right:0; background:white;
+  border:1px solid var(--border); border-radius:var(--radius); box-shadow:0 4px 12px rgba(0,0,0,.1);
+  z-index:500; display:none; max-height:200px; overflow-y:auto;
+}
+.custom-select-dropdown.open { display:block; }
+.custom-select-option {
+  display:flex; align-items:center; gap:8px; padding:6px 10px;
+  cursor:pointer; font-size:12px; font-family:var(--fk);
+}
+.custom-select-option:hover { background:var(--accent-bg); }
+.custom-select-option img { width:18px; height:18px; object-fit:contain; }
+.custom-select-option.selected { background:var(--accent-bg); color:var(--accent); }
+
+/* 이미지 업로드 */
+.img-upload-wrap { border:1px dashed var(--border); border-radius:var(--radius); background:var(--bg-input); padding:8px 10px; text-align:center; cursor:pointer; transition:all .12s; position:relative; }
+.img-upload-wrap:hover { border-color:var(--accent); background:var(--accent-bg); }
+.img-upload-wrap input[type=file] { position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%; }
+.img-upload-label { font-size:11px; color:var(--text-sub); display:flex; align-items:center; justify-content:center; gap:5px; pointer-events:none; }
+.img-preview { max-width:100%; max-height:80px; object-fit:contain; margin:6px auto 0; display:none; border-radius:3px; }
+.img-clear-btn { display:none; margin-top:4px; width:100%; background:var(--red-bg); border:1px solid var(--red); color:var(--red); border-radius:4px; padding:3px; cursor:pointer; font-size:11px; font-family:var(--fk); }
+
+/* 반복 항목 */
+.repeat-item { background:var(--bg); border:1px solid var(--border); border-radius:var(--radius); padding:12px; margin-bottom:8px; }
+.repeat-item-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+.repeat-num { font-size:11px; font-weight:600; color:var(--text-sub); background:var(--bg-hover); border-radius:3px; padding:2px 7px; }
+.remove-btn { display:inline-flex; align-items:center; gap:3px; background:white; border:1px solid var(--border); border-radius:4px; color:var(--red); font-size:11px; padding:3px 8px; cursor:pointer; font-family:var(--fk); transition:all .12s; }
+.remove-btn:hover { background:var(--red-bg); border-color:var(--red); }
+.add-btn { width:100%; background:white; border:1px dashed #adb5bd; border-radius:var(--radius); color:var(--accent); font-family:var(--fk); font-size:12px; font-weight:500; padding:8px; cursor:pointer; transition:all .12s; display:flex; align-items:center; justify-content:center; gap:5px; margin-top:4px; }
+.add-btn:hover { background:var(--accent-bg); border-color:var(--accent); }
+.add-btn:disabled { opacity:.4; cursor:not-allowed; }
+
+.help-chip { display:inline-flex; align-items:flex-start; gap:5px; background:#fff9db; border:1px solid #ffe066; border-radius:4px; padding:5px 9px; font-size:11px; color:#856404; margin-bottom:10px; line-height:1.5; width:100%; }
+
+.mat-row { display:grid; grid-template-columns:60px 1fr 50px auto; gap:6px; align-items:end; margin-bottom:6px; }
+.mat-row-fixed { display:grid; grid-template-columns:60px 1fr; gap:6px; align-items:end; margin-bottom:6px; }
+
+.preview-wrap { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+.preview-bar  { height:38px; background:var(--bg-panel); border-bottom:1px solid var(--border); display:flex; align-items:center; padding:0 14px; gap:7px; flex-shrink:0; }
+.dot   { width:10px; height:10px; border-radius:50%; }
+.dot-r { background:#ff5f57; } .dot-y { background:#febc2e; } .dot-g { background:#28c840; }
+.preview-url { flex:1; background:var(--bg-input); border:1px solid var(--border); border-radius:4px; padding:3px 10px; font-family:var(--fm); font-size:11px; color:var(--text-sub); }
+.preview-frame-wrap { flex:1; overflow:hidden; }
+#preview-frame { width:100%; height:100%; border:none; background:white; }
+
+/* 도움말 모달 */
+.modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:1000; align-items:center; justify-content:center; }
+.modal-overlay.open { display:flex; }
+.modal { background:white; border-radius:10px; width:540px; max-width:95vw; max-height:80vh; overflow-y:auto; box-shadow:0 8px 32px rgba(0,0,0,.18); }
+.modal-head { display:flex; align-items:center; justify-content:space-between; padding:16px 20px 12px; border-bottom:1px solid var(--border); }
+.modal-title { font-size:15px; font-weight:600; color:var(--text); }
+.modal-close { background:none; border:none; font-size:18px; color:var(--text-sub); cursor:pointer; padding:2px 6px; border-radius:4px; }
+.modal-close:hover { background:var(--bg-hover); }
+.modal-body { padding:18px 20px 20px; font-size:13px; line-height:1.7; color:var(--text); }
+.modal-section { margin-bottom:16px; }
+.modal-section-title { font-weight:600; color:var(--accent); margin-bottom:6px; font-size:13px; }
+.modal-body code { background:var(--bg-input); border:1px solid var(--border); border-radius:3px; padding:1px 5px; font-family:var(--fm); font-size:12px; color:#c0392b; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-brand">
+    <div class="topbar-logo">리버스: 1999 캐릭터 위키</div>
+  </div>
+  <div class="topbar-actions">
+    <button class="btn btn-default" onclick="importJSON()">📂 불러오기</button>
+    <button class="btn btn-default" onclick="exportJSON()">💾 JSON 저장</button>
+    <button class="btn btn-success" onclick="exportHTML()">⬇ HTML 내보내기</button>
+    <button class="btn btn-danger btn-sm" onclick="resetAll()">↺ 초기화</button>
+    <button class="btn btn-default btn-sm" onclick="openHelpModal()" title="도움말" style="font-size:14px;padding:5px 10px;">?</button>
+  </div>
+</div>
+
+<div class="layout">
+  <div class="panel">
+
+    <!-- 서식 툴바 고정 -->
+    <div class="fmt-fixed-bar" id="fmt-bar">
+      <span class="fmt-fixed-label">서식</span>
+      <button class="fmt-btn" onclick="applyFmt('bold')" title="굵게"><b>B</b></button>
+      <button class="fmt-btn" onclick="applyFmt('italic')" title="기울임"><i>/</i></button>
+      <div class="fmt-sep"></div>
+      <button class="fmt-btn" onclick="applyFmt('keyword')">키워드</button>
+      <button class="fmt-btn" onclick="applyFmt('pct')">수치</button>
+      <div class="fmt-sep"></div>
+      <button class="fmt-btn" onclick="insertFootnote()">각주</button>
+      <!-- 각주 드롭다운 -->
+      <div class="fn-dropdown" id="fn-dropdown"></div>
+    </div>
+
+    <div class="tab-nav">
+      <div class="tab-nav-label">섹션 선택</div>
+      <div class="tab-list">
+        <button class="tab active" onclick="switchTab('infobox')">인포박스</button>
+        <button class="tab" onclick="switchTab('chara')">캐릭터정보</button>
+        <button class="tab" onclick="switchTab('overview')">개요</button>
+        <button class="tab" onclick="switchTab('official')">공식소개</button>
+        <button class="tab" onclick="switchTab('story')">작중행적</button>
+        <button class="tab" onclick="switchTab('stats')">능력치</button>
+        <button class="tab" onclick="switchTab('insight')">통찰</button>
+        <button class="tab" onclick="switchTab('morph')">형상</button>
+        <button class="tab" onclick="switchTab('inherit')">계승</button>
+        <button class="tab" onclick="switchTab('spell')">마도술</button>
+        <button class="tab" onclick="switchTab('combo')">추천조합</button>
+        <button class="tab" onclick="switchTab('wish')">추천의지</button>
+        <button class="tab" onclick="switchTab('eval')">평가</button>
+        <button class="tab" onclick="switchTab('item')">물품</button>
+        <button class="tab" onclick="switchTab('culture')">문화</button>
+        <button class="tab" onclick="switchTab('field')">황무지대사</button>
+        <button class="tab" onclick="switchTab('voice')">음성</button>
+        <button class="tab" onclick="switchTab('costume')">의상</button>
+        <button class="tab" onclick="switchTab('etc')">기타</button>
+        <button class="tab" onclick="switchTab('footnote')">각주</button>
+      </div>
+    </div>
+
+    <div class="form-area">
+
+      <!-- 인포박스 -->
+      <div class="form-section active" id="sec-infobox">
+        <div class="sec-title"><span class="sec-icon">①</span>인포박스</div>
+        <div class="sub-title">기본 정보</div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">캐릭터명 <span class="form-label-sub">한국어</span></label><input class="form-input" id="ib-name-ko"></div>
+          <div class="form-group"><label class="form-label">캐릭터명 <span class="form-label-sub">영어</span></label><input class="form-input" id="ib-name-en"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">기본 의상 라벨</label><input class="form-input" id="ib-label1"></div>
+          <div class="form-group"><label class="form-label">통찰 의상 라벨</label><input class="form-input" id="ib-label2"></div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">기본 이미지</label>
+          <div class="img-upload-wrap"><input type="file" accept="image/*" onchange="previewImg(this,'ib-img1-prev','ib-img1-data','ib-img1-clear')"><div class="img-upload-label">📁 클릭하여 업로드</div><img id="ib-img1-prev" class="img-preview"></div>
+          <input type="hidden" id="ib-img1-data">
+          <button class="img-clear-btn" id="ib-img1-clear" onclick="clearImg('ib-img1-prev','ib-img1-data','ib-img1-clear')">✕ 이미지 삭제</button>
+        </div>
+        <div class="form-group">
+          <label class="form-label">통찰 이미지</label>
+          <div class="img-upload-wrap"><input type="file" accept="image/*" onchange="previewImg(this,'ib-img2-prev','ib-img2-data','ib-img2-clear')"><div class="img-upload-label">📁 클릭하여 업로드</div><img id="ib-img2-prev" class="img-preview"></div>
+          <input type="hidden" id="ib-img2-data">
+          <button class="img-clear-btn" id="ib-img2-clear" onclick="clearImg('ib-img2-prev','ib-img2-data','ib-img2-clear')">✕ 이미지 삭제</button>
+        </div>
+        <div class="sub-title">스탯</div>
+        <div class="form-group">
+          <label class="form-label">영감</label>
+          <div class="custom-select-wrap"><button class="custom-select-btn" onclick="toggleSelect('inspire-dd')" type="button"><span id="inspire-display">선택하세요</span><span class="caret">▾</span></button><div class="custom-select-dropdown" id="inspire-dd"></div></div>
+          <input type="hidden" id="ib-inspire">
+        </div>
+        <div class="form-group">
+          <label class="form-label">데미지 유형</label>
+          <div class="custom-select-wrap"><button class="custom-select-btn" onclick="toggleSelect('dmg-dd')" type="button"><span id="dmg-display">선택하세요</span><span class="caret">▾</span></button><div class="custom-select-dropdown" id="dmg-dd"></div></div>
+          <input type="hidden" id="ib-dmg">
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">성급</label><input class="form-input" id="ib-star"></div>
+          <div class="form-group"><label class="form-label">역할 태그</label><input class="form-input" id="ib-role"></div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">서명 이미지 <span class="form-label-sub">선택</span></label>
+          <div class="img-upload-wrap"><input type="file" accept="image/*" onchange="previewImg(this,'ib-sign-prev','ib-sign-data','ib-sign-clear')"><div class="img-upload-label">📁 업로드</div><img id="ib-sign-prev" class="img-preview"></div>
+          <input type="hidden" id="ib-sign-data">
+          <button class="img-clear-btn" id="ib-sign-clear" onclick="clearImg('ib-sign-prev','ib-sign-data','ib-sign-clear')">✕ 삭제</button>
+        </div>
+        <div class="sub-title">성우</div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">🇰🇷 한국어</label><input class="form-input" id="ib-cv-kr"></div>
+          <div class="form-group"><label class="form-label">🇺🇸 영어</label><input class="form-input" id="ib-cv-us"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">🇨🇳 중국어</label><input class="form-input" id="ib-cv-cn"></div>
+          <div class="form-group"><label class="form-label">🇯🇵 일본어</label><input class="form-input" id="ib-cv-jp"></div>
+        </div>
+      </div>
+
+      <!-- 캐릭터 정보 -->
+      <div class="form-section" id="sec-chara">
+        <div class="sec-title"><span class="sec-icon">②</span>캐릭터 정보</div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">매개체</label><input class="form-input" id="ch-medium"></div>
+          <div class="form-group"><label class="form-label">영감 설명</label><input class="form-input" id="ch-inspire-desc"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">조향 노트</label><input class="form-input" id="ch-scent"></div>
+          <div class="form-group"><label class="form-label">규격</label><input class="form-input" id="ch-size"></div>
+        </div>
+        <div class="form-group"><label class="form-label">작품 소개</label><div class="rich-editor" id="ch-desc" contenteditable="true" data-placeholder="작품 소개를 입력하세요."></div></div>
+        <div class="sub-title">UDIMO</div>
+        <div class="form-group">
+          <label class="form-label">UDIMO 이미지</label>
+          <div class="img-upload-wrap"><input type="file" accept="image/*" onchange="previewImg(this,'ch-udimo-prev','ch-udimo-data','ch-udimo-clear')"><div class="img-upload-label">📁 업로드</div><img id="ch-udimo-prev" class="img-preview"></div>
+          <input type="hidden" id="ch-udimo-data">
+          <button class="img-clear-btn" id="ch-udimo-clear" onclick="clearImg('ch-udimo-prev','ch-udimo-data','ch-udimo-clear')">✕ 삭제</button>
+        </div>
+        <div class="form-group"><label class="form-label">UDIMO 캡션</label><input class="form-input" id="ch-udimo-cap"></div>
+      </div>
+
+      <!-- 개요 -->
+      <div class="form-section" id="sec-overview">
+        <div class="sec-title"><span class="sec-icon">③</span>개요</div>
+        <div class="form-group"><label class="form-label">개요 본문</label><div class="rich-editor tall" id="ov-text" contenteditable="true" data-placeholder="개요를 입력하세요."></div></div>
+        <div class="form-group"><label class="form-label">인용구 <span class="form-label-sub">빨간 글씨</span></label><input class="form-input" id="ov-quote"></div>
+        <div class="form-group"><label class="form-label">소개</label><div class="rich-editor" id="ov-intro" contenteditable="true" data-placeholder="소개를 입력하세요."></div></div>
+      </div>
+
+      <!-- 공식 소개 -->
+      <div class="form-section" id="sec-official">
+        <div class="sec-title"><span class="sec-icon">④</span>공식 소개</div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">제목</label><input class="form-input" id="of-title"></div>
+          <div class="form-group"><label class="form-label">부제</label><input class="form-input" id="of-sub"></div>
+        </div>
+        <div class="form-group"><label class="form-label">링크 URL</label><input class="form-input" id="of-url"></div>
+        <div class="form-group"><label class="form-label">링크 텍스트</label><input class="form-input" id="of-link-text"></div>
+      </div>
+
+      <!-- 작중 행적 -->
+      <div class="form-section" id="sec-story">
+        <div class="sec-title"><span class="sec-icon">⑤</span>작중 행적</div>
+        <div id="story-list"></div>
+        <button class="add-btn" onclick="addStory()">＋ 에피소드 추가</button>
+      </div>
+
+      <!-- 능력치 -->
+      <div class="form-section" id="sec-stats">
+        <div class="sec-title"><span class="sec-icon">⑥</span>능력치</div>
+        <div class="help-chip">💡 통찰 0~3별 LV1 / 최대 레벨 수치 입력</div>
+        <div id="stats-list"></div>
+      </div>
+
+      <!-- 통찰 -->
+      <div class="form-section" id="sec-insight">
+        <div class="sec-title"><span class="sec-icon">⑦</span>통찰 <span class="form-label-sub" style="font-size:11px;margin-left:4px;">(최대 3단계)</span></div>
+        <div id="insight-list"></div>
+        <button class="add-btn" id="insight-add-btn" onclick="addInsight()">＋ 통찰 단계 추가</button>
+      </div>
+
+      <!-- 형상 -->
+      <div class="form-section" id="sec-morph">
+        <div class="sec-title"><span class="sec-icon">⑧</span>형상</div>
+        <div id="morph-list"></div>
+        <button class="add-btn" onclick="addMorph()">＋ 형상 추가</button>
+        <div class="sub-title" style="margin-top:14px;">형상 평가 텍스트</div>
+        <div class="rich-editor" id="morph-eval" contenteditable="true" data-placeholder="형상 평가를 입력하세요."></div>
+      </div>
+
+      <!-- 계승 -->
+      <div class="form-section" id="sec-inherit">
+        <div class="sec-title"><span class="sec-icon">⑨</span>계승</div>
+        <div class="form-group"><label class="form-label">계승 이름</label><input class="form-input" id="inh-name"></div>
+        <div id="inherit-list"></div>
+        <button class="add-btn" id="inherit-add-btn" onclick="addInherit()">＋ 계승 추가 (최대 3개)</button>
+      </div>
+
+      <!-- 마도술 -->
+      <div class="form-section" id="sec-spell">
+        <div class="sec-title"><span class="sec-icon">⑩</span>마도술</div>
+        <div id="spell-list"></div>
+        <button class="add-btn" onclick="addSpell()">＋ 스킬 추가</button>
+      </div>
+
+      <!-- 추천 조합 -->
+      <div class="form-section" id="sec-combo">
+        <div class="sec-title"><span class="sec-icon">⑪</span>추천 조합</div>
+        <div id="combo-list"></div>
+        <button class="add-btn" onclick="addCombo()">＋ 조합 추가</button>
+      </div>
+
+      <!-- 추천 의지 -->
+      <div class="form-section" id="sec-wish">
+        <div class="sec-title"><span class="sec-icon">⑫</span>추천 의지</div>
+        <div class="help-chip">💡 최대 4개</div>
+        <div id="wish-list"></div>
+        <button class="add-btn" onclick="addWish()">＋ 의지 추가</button>
+      </div>
+
+      <!-- 평가 -->
+      <div class="form-section" id="sec-eval">
+        <div class="sec-title"><span class="sec-icon">⑬</span>평가</div>
+        <div class="form-group"><label class="form-label">평가 본문</label><div class="rich-editor tall" id="ev-text" contenteditable="true" data-placeholder="평가를 입력하세요."></div></div>
+        <div class="sub-title">장점</div>
+        <div id="eval-pro-list"></div>
+        <button class="add-btn" onclick="addEvalPro()">＋ 장점 추가</button>
+        <div class="sub-title" style="margin-top:14px;">단점</div>
+        <div id="eval-con-list"></div>
+        <button class="add-btn" onclick="addEvalCon()">＋ 단점 추가</button>
+      </div>
+
+      <!-- 물품 -->
+      <div class="form-section" id="sec-item">
+        <div class="sec-title"><span class="sec-icon">⑭</span>물품</div>
+        <div id="item-list"></div>
+        <button class="add-btn" onclick="addItem()">＋ 물품 추가</button>
+      </div>
+
+      <!-- 문화 -->
+      <div class="form-section" id="sec-culture">
+        <div class="sec-title"><span class="sec-icon">⑮</span>문화</div>
+        <div class="help-chip">💡 문화 헤더/이미지/푸터는 자동 제공됩니다.</div>
+        <div id="culture-list"></div>
+        <button class="add-btn" onclick="addCulture()">＋ 문화 추가</button>
+      </div>
+
+      <!-- 황무지 대사 -->
+      <div class="form-section" id="sec-field">
+        <div class="sec-title"><span class="sec-icon">⑯</span>황무지 대사</div>
+        <div id="field-list"></div>
+        <button class="add-btn" onclick="addFieldBlock()">＋ 대화 블록 추가</button>
+      </div>
+
+      <!-- 음성 -->
+      <div class="form-section" id="sec-voice">
+        <div class="sec-title"><span class="sec-icon">⑰</span>음성</div>
+        <div id="voice-list"></div>
+        <button class="add-btn" onclick="addVoice()">＋ 음성 추가</button>
+      </div>
+
+      <!-- 의상 -->
+      <div class="form-section" id="sec-costume">
+        <div class="sec-title"><span class="sec-icon">⑱</span>의상</div>
+        <div id="costume-list"></div>
+        <button class="add-btn" onclick="addCostume()">＋ 의상 추가</button>
+      </div>
+
+      <!-- 기타 -->
+      <div class="form-section" id="sec-etc">
+        <div class="sec-title"><span class="sec-icon">⑲</span>기타</div>
+        <div class="help-chip">💡 캐릭터성, 기타 등 자유롭게 항목 추가</div>
+        <div id="etc-list"></div>
+        <button class="add-btn" onclick="addEtc()">＋ 항목 추가</button>
+        <div class="sub-title" style="margin-top:14px;">문서 정보</div>
+        <div class="form-group"><label class="form-label">마지막 수정일</label><input class="form-input" id="etc-date"></div>
+      </div>
+
+      <!-- 각주 -->
+      <div class="form-section" id="sec-footnote">
+        <div class="sec-title"><span class="sec-icon">⑳</span>각주</div>
+        <div class="help-chip">💡 서식 툴바의 "각주 ▾" 버튼으로 본문에 삽입하세요.</div>
+        <div id="footnote-list"></div>
+        <button class="add-btn" onclick="addFootnote()">＋ 각주 추가</button>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="preview-wrap">
+    <div class="preview-bar">
+      <div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div>
+      <div class="preview-url">wiki-preview — 실시간 미리보기</div>
+    </div>
+    <div class="preview-frame-wrap">
+      <iframe id="preview-frame" srcdoc=""></iframe>
+    </div>
+  </div>
+</div>
+
+<!-- 도움말 모달 -->
+<!-- ↓↓↓ 모달 내용 수정하려면 이 아래 .modal-body 안을 편집하세요 ↓↓↓ -->
+<div class="modal-overlay" id="help-modal" onclick="if(event.target===this)closeHelpModal()">
+  <div class="modal">
+    <div class="modal-head">
+      <span class="modal-title">사용 방법</span>
+      <button class="modal-close" onclick="closeHelpModal()">✕</button>
+    </div>
+    <div class="modal-body">
+
+      <div class="modal-section">
+        <div class="modal-section-title">💙 안내 사항</div>
+        리버스: 1999 전용 위키 생성 페이지입니다. 자유롭게 이용해주세요.<br>
+        모든 문의는 트위터(X)의 @NA5A1999 계정의 디엠이나 익명 질문함으로 주세요.<br>
+        사용 예시는 이 <a href="https://na5a1999.naru.pub/#/wiki">페이지</a>를 확인해주세요.<br>
+        <span style="color: blue;"<b>보이저</b></span> 드림주의 사용을 금지합니다.
+      </div>
+
+      <div class="modal-section">
+        <div class="modal-section-title">📝 텍스트 서식</div>
+        텍스트를 드래그한 후 상단 서식 툴바 버튼을 클릭하세요.<br>
+        아무것도 선택하지 않고 버튼을 누르면 <code>텍스트</code>라는 플레이스홀더가 삽입됩니다.
+        <br>
+        · <b>B (굵게)</b> — 선택한 텍스트를 굵게 표시<br>
+        · <i>/ (기울임)</i> — 선택한 텍스트를 기울임체로, 회색으로 표시<br>
+        · <span style="color:#0077ff;font-weight:600;">키워드</span> — 스킬명·상태이상 등 파란색 강조<br>
+        · <span style="color:#ff8400;font-weight:600;">수치</span> — % 수치 등 주황색 강조
+      </div>
+
+      <div class="modal-section">
+        <div class="modal-section-title">📌 각주 삽입</div>
+        1. 본문 텍스트 칸에 글을 쓰세요.<br>
+        2. 각주로 연결할 단어를 드래그해 선택하세요.<br>
+        3. 서식 툴바의 <b>각주</b> 버튼을 클릭하세요.<br>
+        4. 팝업창에 각주 이름을 입력하세요. (예: <code>1</code>)<br>
+        5. 선택한 단어 윗첨자로 <code>[1]</code>가 자동 삽입됩니다.<br>
+        6. 좌측 탭에서 <b>각주</b> 섹션으로 이동하면 자동 추가된 항목이 보입니다.<br>
+        7. 내용을 입력하면 마우스 오버 시 툴팁에 자동 반영됩니다.
+      </div>
+
+      <div class="modal-section">
+        <div class="modal-section-title">💡 기타 팁</div>
+        · 통찰 재료: 등급 선택 → 드롭다운에서 아이템 선택 → 이름×수량 자동 입력<br>
+        · 마도술 타입 아이콘: 드롭다운에서 선택하면 이미지 자동 적용<br>
+        · 계승 이미지: 추가 순서대로 자동 배정 (최대 3개)<br>
+        · JSON 저장으로 작업 내용을 보존하고, 나중에 불러올 수 있습니다.<br>
+        · HTML 내보내기로 완성된 위키 파일을 받을 수 있습니다.
+      </div>
+
+    </div>
+  </div>
+</div>
+<!-- ↑↑↑ 모달 내용 끝 ↑↑↑ -->
+
+<input type="file" id="json-import-input" accept=".json" style="display:none;" onchange="handleJSONImport(event)">
+<script src="builder.js"></script>
+<script>
+function openHelpModal()  { document.getElementById('help-modal').classList.add('open'); }
+function closeHelpModal() { document.getElementById('help-modal').classList.remove('open'); }
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeHelpModal(); });
+</script>
+</body>
+</html>
