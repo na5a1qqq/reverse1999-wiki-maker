@@ -214,7 +214,7 @@ function insertFootnote() {
   const selectedText = range.toString();
 
   // 각주 이름 입력
-  const fnName = prompt('각주 이름을 입력하세요:\n예) 관측 로그');
+  const fnName = prompt('각주 이름을 입력하세요:\n예) 1, 2, 코러스앙상블');
   if (!fnName || !fnName.trim()) return;
   const name = fnName.trim();
 
@@ -290,7 +290,7 @@ function addFootnote() {
     </div>
     <div class="form-group">
       <label class="form-label">각주 이름</label>
-      <input class="form-input fn-name" placeholder="예: 관측 로그">
+      <input class="form-input fn-name" placeholder="예: 1, 2, 코러스앙상블">
     </div>
     <div class="form-group">
       <label class="form-label">내용 <span class="form-label-sub">툴팁에 자동 반영</span></label>
